@@ -199,6 +199,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "meet.tasks.check_and_start_movies",
         "schedule": 60.0,   # every 60 seconds
     },
+    "cleanup-expired-ingresses": {
+        "task": "meet.tasks.cleanup_expired_ingresses",
+        "schedule": 300.0,  # every 5 minutes
+    },
 }
 
 

@@ -6,6 +6,7 @@ asgiref==3.9.1
 attrs==25.3.0
 autobahn==24.4.2
 Automat==25.4.16
+av==14.1.0
 billiard==4.2.1
 cachetools==5.5.2
 celery==5.5.3
@@ -31,6 +32,7 @@ hyperlink==21.0.0
 idna==3.10
 incremental==24.7.2
 kombu==5.5.4
+livekit==1.0.12
 livekit-api==1.0.5
 livekit-protocol==1.0.5
 msgpack==1.1.1

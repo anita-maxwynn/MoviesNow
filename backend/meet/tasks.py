@@ -39,17 +39,52 @@ def start_movie_ingress(room_id):
 
         # Get movie URL
         if room.movie.hls_path:
-            movie_url = room.movie.hls_path
-            if not movie_url.startswith('http'):
-                movie_url = f"http://localhost:8000{movie_url}"
+            hls_path = room.movie.hls_path
+            # Clean up the path - remove any leading media root paths
+            if 'media/movies/' in hls_path:
+                # Extract just the relative path after media/movies/
+                hls_path = hls_path.split('media/movies/', 1)[1]
+            elif hls_path.startswith('/'):
+                hls_path = hls_path.lstrip('/')
+            
+            # Construct proper URL
+            movie_url = f"http://localhost:8000/media/movies/{hls_path}"
+            logger.info(f"Using HLS URL: {movie_url}")
         else:
             movie_url = f"http://localhost:8000{settings.MEDIA_URL}{room.movie.movie_file.name}"
+            logger.info(f"Using MP4 URL: {movie_url}")
 
         # Create LiveKit ingress
         try:
             ingress_info = create_livekit_ingress(room.name, movie_url)
-            room.ingress_id = ingress_info.get("sid", None)
-            logger.info(f"LiveKit ingress started for room {room.name}, ingress_id={room.ingress_id}")
+            room.ingress_id = ingress_info.get("ingress_id", None)
+            
+            # Check if it's a fallback response
+            if ingress_info.get("status") == "fallback":
+                logger.info(f"Using fallback bot streaming for room {room.name}")
+                # Start bot streaming directly
+                from .utils import run_bot
+                import asyncio
+                import threading
+                
+                def run_bot_sync():
+                    try:
+                        # Use asyncio.run to handle the async function
+                        if room.movie.file:
+                            video_file = room.movie.file.path
+                        else:
+                            video_file = movie_url
+                        
+                        logger.info(f"Starting bot streaming: {video_file} -> {room.name}")
+                        asyncio.run(run_bot(room.name, video_file))
+                    except Exception as e:
+                        logger.error(f"Bot streaming failed: {e}")
+                
+                # Run bot in separate thread to avoid blocking
+                bot_thread = threading.Thread(target=run_bot_sync, daemon=True)
+                bot_thread.start()
+                
+            logger.info(f"LiveKit ingress/bot started for room {room.name}, ingress_id={room.ingress_id}")
         except Exception as e:
             logger.error(f"Failed to create LiveKit ingress for room {room.name}: {e}")
             room.ingress_id = None
@@ -66,7 +101,8 @@ def start_movie_ingress(room_id):
 
         # Start bot streamer in background
         if movie_url and room.name:
-            asyncio.run(run_bot(room.name, movie_url))
+            # Start the bot in a separate Celery task to avoid blocking
+            start_video_bot.delay(room.name, movie_url)
 
     except Room.DoesNotExist:
         logger.error(f"Room with id {room_id} does not exist")
@@ -161,8 +197,9 @@ def notify_movie_bot_joined(room_id):
         from asgiref.sync import async_to_sync
         room = Room.objects.get(id=room_id)
         channel_layer = get_channel_layer()
+        group_name = f'chat_{str(room.id).replace("-", "_")[:50]}'
         async_to_sync(channel_layer.group_send)(
-            f'chat_{room.name}',
+            group_name,
             {
                 'type': 'chat_message',
                 'message': f'🎬 Movie Bot has joined! "{room.movie.title}" is now starting. Enjoy the show! 🍿',
@@ -192,3 +229,20 @@ def cleanup_expired_ingresses():
             logger.info(f"Scheduled cleanup for expired room: {room.name}")
         except Exception as e:
             logger.error(f"Failed to schedule cleanup for room {room.name}: {str(e)}")
+
+
+@shared_task
+def start_video_bot(room_name, movie_url):
+    """Start the video bot in an async context"""
+    try:
+        logger.info(f"Starting video bot for room: {room_name}, URL: {movie_url}")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(run_bot(room_name, movie_url))
+    except Exception as e:
+        logger.error(f"Failed to run video bot for room {room_name}: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+    finally:
+        loop.close()
+        logger.info(f"Video bot task completed for room: {room_name}")

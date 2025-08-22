@@ -1,16 +1,21 @@
 from rest_framework import viewsets, generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
 from livekit import api
 from django.conf import settings
 from django.contrib.auth import get_user_model
+import asyncio
+import logging
 from .models import Room, Invitation
 from .serializers import RoomSerializer, InvitationSerializer
+from .tasks import start_movie_ingress, stop_movie_ingress
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all().order_by('-created_at')
@@ -20,6 +25,85 @@ class RoomViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Automatically set the creator to the current user
         serializer.save(creator=self.request.user)
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def start_movie(self, request, pk=None):
+        """Start movie streaming for this room"""
+        room = self.get_object()
+        
+        # Check permissions - only room creator can start movie
+        if room.creator != request.user:
+            return Response(
+                {'error': 'Only the room creator can start the movie'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if not room.movie:
+            return Response(
+                {'error': 'No movie assigned to this room'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if room.movie_started:
+            return Response(
+                {'error': 'Movie is already started'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Start the movie streaming
+        start_movie_ingress.delay(str(room.id))
+        
+        return Response({
+            'message': 'Movie streaming started',
+            'room_id': str(room.id),
+            'movie_title': room.movie.title
+        })
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def stop_movie(self, request, pk=None):
+        """Stop movie streaming for this room"""
+        room = self.get_object()
+        
+        # Check permissions - only room creator can stop movie
+        if room.creator != request.user:
+            return Response(
+                {'error': 'Only the room creator can stop the movie'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if not room.movie_started:
+            return Response(
+                {'error': 'Movie is not currently started'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Stop the movie streaming
+        stop_movie_ingress.delay(str(room.id))
+        
+        return Response({
+            'message': 'Movie streaming stopped',
+            'room_id': str(room.id),
+            'movie_title': room.movie.title if room.movie else None
+        })
+    
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def movie_status(self, request, pk=None):
+        """Get current movie streaming status for this room"""
+        room = self.get_object()
+        
+        return Response({
+            'room_id': str(room.id),
+            'room_name': room.name,
+            'has_movie': bool(room.movie),
+            'movie_title': room.movie.title if room.movie else None,
+            'movie_started': room.movie_started,
+            'movie_start_time': room.movie_start_time,
+            'movie_end_time': room.movie_end_time,
+            'movie_url': room.movie_url,
+            'ingress_id': room.ingress_id,
+            'meet_datetime': room.meet_datetime,
+            'is_scheduled_to_start': room.meet_datetime <= timezone.now() if room.meet_datetime else False
+        })
 
 class CreateInvitation(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]

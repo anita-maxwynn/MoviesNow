@@ -27,6 +27,10 @@ class Room(models.Model):
     movie_start_time = models.DateTimeField(null=True, blank=True)
     movie_end_time = models.DateTimeField(null=True, blank=True)
     
+    # LiveKit streaming fields
+    ingress_id = models.CharField(max_length=255, null=True, blank=True, help_text="LiveKit ingress ID for streaming")
+    movie_url = models.URLField(null=True, blank=True, help_text="Current movie streaming URL")
+    
     class Meta:
         ordering = ['-created_at']
     
