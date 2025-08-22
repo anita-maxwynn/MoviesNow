@@ -1,10 +1,12 @@
 // src/pages/movies-list.tsx
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
 import { moviesAPI } from "@/lib/api"
 import { toast } from "sonner"
+import { useAuth } from "@/providers/AuthProvider"
+import { Edit, Trash2, Play } from "lucide-react"
 
 interface Movie {
   id: string
@@ -25,6 +27,10 @@ interface Movie {
 export default function Movies() {
   const [movies, setMovies] = useState<Movie[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingMovieId, setDeletingMovieId] = useState<string | null>(null)
+  const { user } = useAuth()
+
+  const isStaff = user?.is_staff || false
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -42,6 +48,26 @@ export default function Movies() {
 
     fetchMovies()
   }, [])
+
+  const handleDeleteMovie = async (movieId: string, movieTitle: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${movieTitle}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeletingMovieId(movieId)
+    try {
+      await moviesAPI.deleteMovie(movieId)
+      toast.success("Movie deleted successfully!")
+      // Remove the deleted movie from the state
+      setMovies(prevMovies => prevMovies.filter(movie => movie.id !== movieId))
+    } catch (error: any) {
+      console.error('Failed to delete movie:', error)
+      const errorMessage = error.response?.data?.message || error.response?.data?.detail || "Failed to delete movie"
+      toast.error(errorMessage)
+    } finally {
+      setDeletingMovieId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -106,12 +132,38 @@ export default function Movies() {
             </CardContent>
 
             {/* Footer */}
-            <CardFooter className="p-4">
+            <CardFooter className="p-4 space-y-3">
               <Link to={`/movies/${movie.id}`} className="w-full">
-                <Button className="w-full bg-white/20 text-white hover:bg-white/30 rounded-xl transition-all duration-300">
+                <Button className="w-full bg-white/20 text-white hover:bg-white/30 rounded-xl transition-all duration-300 flex items-center gap-2">
+                  <Play className="w-4 h-4" />
                   Watch Now
                 </Button>
               </Link>
+              
+              {/* Staff-only buttons */}
+              {isStaff && (
+                <div className="flex space-x-2 w-full">
+                  <Link to={`/movies/${movie.id}/edit`} className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      className="w-full bg-blue-500/20 border-blue-500/50 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 rounded-xl transition-all duration-300 flex items-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </Button>
+                  </Link>
+                  
+                  <Button 
+                    variant="outline"
+                    className="flex-1 bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30 hover:text-red-200 rounded-xl transition-all duration-300 flex items-center gap-2"
+                    onClick={() => handleDeleteMovie(movie.id, movie.title)}
+                    disabled={deletingMovieId === movie.id}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    {deletingMovieId === movie.id ? "Deleting..." : "Delete"}
+                  </Button>
+                </div>
+              )}
             </CardFooter>
           </Card>
         ))}

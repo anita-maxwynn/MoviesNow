@@ -42,3 +42,6 @@ class MovieReview(models.Model):
 
     def __str__(self):
         return f"Review for {self.movie.title} by {self.user.email}"
+
+    class Meta:
+        ordering = ['-id']  # Order by ID since we don't have created_at

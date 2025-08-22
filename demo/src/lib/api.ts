@@ -85,6 +85,17 @@ export const authAPI = {
     api.post('/account/google-login/', { access_token: accessToken }),
   
   getProfile: () => api.get('/account/profile/'),
+  
+  updateProfile: (profileData: {
+    name?: string;
+    profile_picture?: string;
+  }) => api.put('/account/profile/', profileData),
+  
+  changePassword: (passwordData: {
+    old_password: string;
+    new_password: string;
+    confirm_password: string;
+  }) => api.post('/account/profile/change-password/', passwordData),
 };
 
 // Movies API

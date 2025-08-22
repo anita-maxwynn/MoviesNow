@@ -53,7 +53,7 @@ export function NavigationMenuDemo() {
             to="/"
             className="flex items-center space-x-2 font-bold text-lg sm:text-xl text-gray-800 dark:text-white px-2 sm:px-4"
           >
-            <span className="truncate">YourBrand</span>
+            <span className="truncate">MoviesNow</span>
           </Link>
         </div>
 
@@ -115,14 +115,6 @@ export function NavigationMenuDemo() {
                 <NavigationMenuLink asChild>
                   <Link to="/movies" className="hover:text-blue-600 transition-colors px-3 py-2 rounded-md">
                     Movies
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link to="/contact" className="hover:text-blue-600 transition-colors px-3 py-2 rounded-md">
-                    Contact
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -218,7 +210,6 @@ export function NavigationMenuDemo() {
                   </div>
                   
                   <MobileNavItem to="/movies">Movies</MobileNavItem>
-                  <MobileNavItem to="/contact">Contact</MobileNavItem>
                   
                   {/* Authentication Section for Mobile */}
                   {isAuthenticated ? (

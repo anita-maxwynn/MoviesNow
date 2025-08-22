@@ -11,6 +11,7 @@ interface User {
   phone_number?: string;
   profile_picture?: string;
   is_active: boolean;
+  is_staff: boolean;
   date_joined: string;
 }
 
@@ -19,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   register: (userData: {
     username: string;
     email: string;
@@ -30,6 +32,7 @@ interface AuthContextType {
   }) => Promise<void>;
   logout: () => void;
   refreshAuth: () => Promise<void>;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -139,6 +142,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const googleLogin = async (credential: string) => {
+    try {
+      const response = await authAPI.googleLogin(credential);
+      const { access, refresh, user: userData } = response.data;
+
+      localStorage.setItem('access_token', access);
+      localStorage.setItem('refresh_token', refresh);
+      setUser(userData);
+    } catch (error) {
+      console.error('Google login failed:', error);
+      throw error;
+    }
+  };
+
   const register = async (userData: {
     username: string;
     email: string;
@@ -194,14 +211,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...userData });
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated,
     login,
+    googleLogin,
     register,
     logout,
     refreshAuth,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

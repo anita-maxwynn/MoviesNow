@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
-import gsap from 'gsap'
 import './App.css'
 import HomePage from './pages/Home/HomePage'
+import AboutPage from './pages/Home/AboutPage'
+import ProfilePage from './pages/Profile/ProfilePage'
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { NavigationMenuDemo } from "./components/NavBar"
+import Footer from './components/Footer'
 import Login from './pages/Home/Login'
 import { Toaster } from "sonner"
 import Register from './pages/Home/Register'
@@ -160,6 +161,8 @@ function App() {
         {/* ✅ Define your routes */}
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Register />} />
           <Route path="/movies" element={<Movies />} />
@@ -175,6 +178,9 @@ function App() {
         
         {/* Toast notifications */}
         <Toaster />
+        
+        {/* Footer */}
+        <Footer />
       </BrowserRouter>
     </AuthProvider>
   )

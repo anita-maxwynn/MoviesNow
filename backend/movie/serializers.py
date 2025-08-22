@@ -44,9 +44,25 @@ class MovieSerializer(serializers.ModelSerializer):
 
 
 class MovieReviewSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+    user_email = serializers.SerializerMethodField()
+    
     class Meta:
         model = MovieReview
         fields = [
-            'id', 'movie', 'user', 'rating', 'comment'
+            'id', 'movie', 'user', 'user_name', 'user_email', 'rating', 'comment'
         ]
-        read_only_fields = ['id', 'user']
+        read_only_fields = ['id', 'user', 'user_name', 'user_email']
+    
+    def get_user_name(self, obj):
+        """Get user's display name"""
+        if hasattr(obj.user, 'name') and obj.user.name:
+            return obj.user.name
+        elif hasattr(obj.user, 'first_name') and obj.user.first_name:
+            return f"{obj.user.first_name} {getattr(obj.user, 'last_name', '')}".strip()
+        else:
+            return obj.user.email.split('@')[0]  # Use email prefix as fallback
+    
+    def get_user_email(self, obj):
+        """Get user's email"""
+        return obj.user.email

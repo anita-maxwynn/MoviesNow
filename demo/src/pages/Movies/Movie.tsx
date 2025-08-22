@@ -27,6 +27,8 @@ interface Review {
   id: string
   movie: string
   user: string
+  user_name: string
+  user_email: string
   rating: number
   comment: string
 }
@@ -324,7 +326,7 @@ export default function MovieDetails() {
                       />
                     ))}
                     <span className="ml-2 text-sm text-gray-400">
-                      by User {review.user}
+                      by {review.user_name || review.user_email}
                     </span>
                   </div>
                   <p className="text-gray-200">{review.comment}</p>
