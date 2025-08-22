@@ -13,15 +13,13 @@ import {
   useTracks,
   ControlBar,
   ConnectionQualityIndicator,
-  FocusLayoutContainer,
-  Chat,
   useParticipants,
 } from '@livekit/components-react';
+import Chat from '@/components/Chat';
 import { Track } from 'livekit-client';
 import '@livekit/components-styles';
 import { 
   Video, 
-  MessageSquare,
   Users,
 } from "lucide-react";
 
@@ -68,8 +66,8 @@ const SpotlightLayout = () => {
 
       {otherTracks.length > 0 && (
         <div className="flex gap-2 overflow-x-auto mt-2 px-2">
-          {otherTracks.map((track) => (
-            <TrackRefContext.Provider key={track.sid} value={track}>
+          {otherTracks.map((track, index) => (
+            <TrackRefContext.Provider key={`${track.participant.sid}-${index}`} value={track}>
               <ParticipantTile className="w-32 h-24 object-cover rounded-lg flex-shrink-0" />
             </TrackRefContext.Provider>
           ))}
@@ -80,17 +78,16 @@ const SpotlightLayout = () => {
 };
 
 
-const MeetingRoom = ({ roomData, onLeave }: { roomData: RoomData; onLeave: () => void }) => {
-  const [showChat, setShowChat] = useState(false);
+const MeetingRoom = ({ roomData, onLeave, roomId }: { roomData: RoomData; onLeave: () => void; roomId: string }) => {
   const [showParticipants, setShowParticipants] = useState(false);
   const participants = useParticipants();
 
   return (
     <div className="h-full flex">
       {/* Main meeting area */}
-      <div className={`flex-1 flex flex-col ${showChat ? 'mr-80' : ''}`}>
+      <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
+        <div className=" border-b px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-semibold">{roomData.name}</h2>
             {roomData.movie_details && (
@@ -107,30 +104,23 @@ const MeetingRoom = ({ roomData, onLeave }: { roomData: RoomData; onLeave: () =>
           
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant={showParticipants ? "default" : "outline"}
               size="sm"
               onClick={() => setShowParticipants(!showParticipants)}
             >
               <Users className="w-4 h-4 mr-2" />
               {participants.length}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowChat(!showChat)}
-            >
-              <MessageSquare className="w-4 h-4" />
-            </Button>
           </div>
         </div>
 
         {/* Video area with spotlight layout */}
-        <div className="flex-1 bg-gray-900">
+        <div className="flex-1 bg-gray-900 rounded-lg overflow-hidden">
           <SpotlightLayout />
         </div>
 
         {/* Control bar */}
-        <div className="bg-white border-t px-6 py-4 flex justify-between items-center">
+        <div className="border-t px-6 py-4 flex justify-between items-center">
           <ControlBar 
             variation="minimal"
             controls={{
@@ -148,43 +138,41 @@ const MeetingRoom = ({ roomData, onLeave }: { roomData: RoomData; onLeave: () =>
       </div>
 
       {/* Chat sidebar */}
-      {showChat && (
-        <div className="w-80 bg-white border-l flex flex-col">
+      <div className="w-80  border-l flex flex-col">
+        <div className="p-4 border-b">
+          <h3 className="font-semibold">Chat</h3>
+        </div>
+        <div className="flex-1">
+          <Chat roomId={roomId} />
+        </div>
+      </div>
+
+      {/* Participants overlay */}
+      {showParticipants && (
+        <div className="absolute right-0 top-0 w-64  rounded-lg shadow-xl border z-50 h-full">
           <div className="p-4 border-b">
-            <h3 className="font-semibold">Chat</h3>
+            <h3 className="font-semibold">Participants ({participants.length})</h3>
           </div>
-          <div className="flex-1">
-            <Chat />
+          <div className="overflow-y-auto max-h-full">
+            {participants.map((p) => (
+              <div key={p.sid} className="p-3 border-b last:border-b-0 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    {p.identity.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">
+                      {p.identity} {p.isLocal && <Badge variant="outline" className="ml-2 text-xs">You</Badge>}
+                    </div>
+                    {p.isSpeaking && <div className="text-xs text-green-600">Speaking</div>}
+                  </div>
+                </div>
+                <ConnectionQualityIndicator participant={p} />
+              </div>
+            ))}
           </div>
         </div>
       )}
-
-      {/* Participants sidebar */}
-      {showParticipants && (
-    <div className="absolute right-0 top-0 w-64 bg-white rounded-lg shadow-lg border z-50 h-full">
-      <div className="p-4 border-b">
-        <h3 className="font-semibold">Participants ({participants.length})</h3>
-      </div>
-      <div className="overflow-y-auto max-h-full">
-        {participants.map((p) => (
-          <div key={p.sid} className="p-3 border-b last:border-b-0 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                {p.identity.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <div className="font-medium text-sm">
-                  {p.identity} {p.isLocal && <Badge variant="outline" className="ml-2 text-xs">You</Badge>}
-                </div>
-                {p.isSpeaking && <div className="text-xs text-green-600">Speaking</div>}
-              </div>
-            </div>
-            <ConnectionQualityIndicator participant={p} />
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
     </div>
   );
 };
@@ -310,7 +298,7 @@ export default function Meet() {
   const livekitUrl = import.meta.env.VITE_LIVEKIT_URL || "wss://localhost:7880";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {!token ? (
         <div className="min-h-screen flex items-center justify-center p-4">
           <Card className="max-w-lg w-full">
@@ -321,14 +309,14 @@ export default function Meet() {
               </div>
               
               <div className="space-y-6">
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className=" rounded-lg p-4">
                   <h3 className="text-lg font-semibold mb-2">{roomData.name}</h3>
                   <div className="space-y-2 text-sm text-gray-600">
                     <p><strong>Host:</strong> {roomData.creator_email}</p>
                     <p><strong>Meeting Time:</strong> {new Date(roomData.meet_datetime).toLocaleString()}</p>
                     <p><strong>Max Participants:</strong> {roomData.max_participants}</p>
                     {roomData.movie_details && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                      <div className="mt-3 p-3  rounded border-l-4 border-blue-400">
                         <p><strong>🎬 Featured Movie:</strong> {roomData.movie_details.title}</p>
                         <p className="text-xs mt-1">{roomData.movie_details.description}</p>
                         <p className="text-xs">Duration: {roomData.movie_details.duration_minutes} minutes</p>
@@ -396,7 +384,7 @@ export default function Meet() {
               },
             }}
           >
-            <MeetingRoom roomData={roomData} onLeave={handleLeaveRoom} />
+            <MeetingRoom roomData={roomData} onLeave={handleLeaveRoom} roomId={roomId!} />
           </LiveKitRoom>
         </div>
       )}

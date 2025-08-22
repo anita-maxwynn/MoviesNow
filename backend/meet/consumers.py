@@ -11,6 +11,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Handle both room_name and room_id URL parameters
         self.room_name = self.scope['url_route']['kwargs'].get('room_name')
         self.room_id = self.scope['url_route']['kwargs'].get('room_id')
+        self.room_group_name = None  # Initialize to avoid AttributeError
         
         user = self.scope["user"]
 
@@ -47,23 +48,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         await self.accept()
-        print(f"WebSocket connection accepted for user {user.username} in room {room.name}")
+        print(f"WebSocket connection accepted for user {user.email} in room {room.name}")
 
         # Load and send previous messages upon connection
         messages = await self.get_room_messages(room)
-        for message in messages:
+        for message_data in messages:
             await self.send(text_data=json.dumps({
-                'message': message.content,
-                'username': message.user.username,
-                'timestamp': message.timestamp.isoformat()
+                'message': message_data['content'],
+                'username': message_data['user_email'],  # Use pre-fetched email
+                'timestamp': message_data['timestamp']
             }))
 
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        # Only try to leave group if room_group_name was set
+        if hasattr(self, 'room_group_name') and self.room_group_name:
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
@@ -87,7 +90,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'chat_message',
                 'message': message_content,
-                'username': user.username,
+                'username': user.email,  # Use email instead of username
                 'timestamp': timezone.now().isoformat()
             }
         )
@@ -125,7 +128,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def get_valid_invitation(self, user, room):
         # Allow room creator to always join
         if room.creator == user:
-            print(f"Room creator {user.username} joining room {room.name}")
+            print(f"Room creator {user.email} joining room {room.name}")
             return True
             
         # For invited users, check for valid invitation (can be used or unused)
@@ -136,10 +139,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 expires_at__gte=timezone.now()
             ).first()
             if invitation:
-                print(f"Valid invitation found for {user.username} in room {room.name}")
+                print(f"Valid invitation found for {user.email} in room {room.name}")
                 return invitation
             else:
-                print(f"No valid invitation found for {user.username} in room {room.name}")
+                print(f"No valid invitation found for {user.email} in room {room.name}")
                 raise Exception("No valid invitation")
         except Exception as e:
             print(f"Invitation check failed: {e}")
@@ -155,8 +158,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_room_messages(self, room):
-        # Fetch up to the last 50 messages for the chat history
-        return list(room.messages.order_by('-timestamp')[:50])
+        # Fetch up to the last 50 messages for the chat history with user info
+        messages = room.messages.select_related('user').order_by('-timestamp')[:50]
+        return [
+            {
+                'content': msg.content,
+                'user_email': msg.user.email,
+                'timestamp': msg.timestamp.isoformat()
+            }
+            for msg in messages
+        ]
 
     @database_sync_to_async
     def save_message(self, user, room, content):

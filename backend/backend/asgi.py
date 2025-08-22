@@ -12,7 +12,7 @@ from backend.jwt_middleware import JWTAuthMiddleware
 import meet.routing
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": AuthMiddlewareStack(
+    "websocket": JWTAuthMiddleware(
         URLRouter(
             meet.routing.websocket_urlpatterns
         )
