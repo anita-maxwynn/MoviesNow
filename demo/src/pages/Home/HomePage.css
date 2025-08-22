@@ -1,0 +1,322 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #1b1a1a;
+  color: white;
+  font-family: sans-serif;
+  width: 100vw;
+}dy {
+  margin: 0;
+  padding: 0;
+  /* background: #1b1a1a; */
+  color: white;
+  font-family: sans-serif;
+  width: 100wh;
+}
+
+.container {
+  position: relative;
+  min-height: 200vh; /* ✅ scroll space */
+  background: #1b1a1a;
+  width: 100vw;
+}
+
+.title {
+  color: white;
+  font-size: 100px;
+  font-weight: 1000;
+  position: relative;
+  top: 25vh;
+  left: 200px;
+  z-index: 1;
+  background-color: #20323800;
+  
+}
+
+.box {
+  position: absolute;
+  top: 50vh;
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 2px;
+}
+
+.box-a { left: 0%; background: #e63946; }
+.box-b { left: 20%; background: #457b9d; }
+.box-c { left: 40%; background: #2a9d8f; }
+.box-d { left: 60%; background: #f4a261; }
+.box-e { left: 80%; background: #2a9d8f; }
+
+.rotation {
+  position: relative;
+  top: 90vh;
+  left: 40%;
+  width: 200px;
+  height: 200px;
+}
+
+.rotation img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform-origin: center center;
+}
+
+*{
+  background: #1b1a1a;
+}
+
+
+
+.autoShow{
+  position: relative;
+  top: 600px;
+  color:white;
+  animation: text-appear both;
+  animation-timeline: view();
+  animation-range: entry 20% cover 100vh;
+}
+
+@keyframes text-appear {
+  from{
+    opacity: 0;
+    transform: translateY(100px);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+.team-members {
+  position: relative;
+  top:700px;
+  color: white;
+}
+
+.team-member1{
+  position: relative;
+  left:300px;
+}
+.team-member2{
+  position: relative;
+  bottom:285px;
+  left:600px;
+}
+
+.role{
+  position: relative;
+  top:10px;
+}
+.imageReveal{
+  height: 200px;
+  width: 200px;
+  animation: imageReveal both;
+  animation-timeline: view(50% 10%);
+}
+
+@keyframes imageReveal {
+  from{
+    filter:saturate(0) contrast(4) brightness(.1) blur(5px);
+    opacity: 0;
+    scale:.95;
+    translate: 0 4rem;
+  }
+  to{
+    filter:none;
+    opacity: 1;
+    scale:1;
+    translate:0 0;
+  }
+}
+
+.details{
+  background-color: #1b1a1a;
+  color: white;
+  position: relative;
+  top: 500px;
+ 
+}
+.separetor{
+  height:700px;
+  width: 1px;
+  background-color: #06ad06;
+  position:relative;
+  bottom: 300px;
+  left:50%;
+  z-index: 20;
+}
+
+.box1{
+  background-color: #1b1a1a;
+  position: relative;
+  top:25px;
+  left:44%;
+  width: 200px;
+}
+
+.box2{
+  background-color: #1b1a1a;
+  position: relative;
+  left:44%;
+  bottom: 700px;
+  width: 200px;
+}
+
+.adjust{
+  height: 50px;
+  width: 50px;
+}
+
+.adjust1{
+   position:relative;
+   right: 35px;
+   top:50px;
+}
+
+.adjust2{
+   position:relative;
+   left:120px;
+   top:100px;
+}
+
+
+.a1{
+  position:relative;
+  left: 120px;
+  top: 0px;
+  z-index: 10;
+}
+.a2{
+  position:relative;
+  left:-200px;
+  top:40px;
+  text-align: right;
+}
+
+
+.fadeUp{
+  animation: fadeUp both;
+  animation-timeline: view() ;
+}
+
+@keyframes fadeUp{
+  from{
+    opacity: 0;
+    transform: translateY(10px) scale(0.5);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+div ul li {
+  list-style-type:none;
+}
+.service{
+  position: absolute;
+  top:4000px;
+  left:25%;
+  font-size: 50px;
+  text-align: center;
+  color: white;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  
+}
+
+
+.autoBlur{
+  animation: autoBlurAnimation linear both;
+  animation-timeline: view(50% auto);
+}
+
+@keyframes autoBlurAnimation {
+  0%{
+      filter: blur(20px);
+  }
+  35%, 45%{
+      filter: blur(0px);
+  }
+  70%{
+      filter: blur(20px);
+  }
+  100%{
+      filter: blur(0px);
+  }
+}
+
+.last{
+  position: relative;
+  top:100%;
+}
+
+.last-img{
+  height: 500px;
+  width: 500px;
+}
+
+.last-text{
+  
+  width: 500px;
+  color: white;
+}
+
+.last-text1{
+position:relative;
+text-align: left;
+top:20px;
+
+
+}
+.last-text2{
+position:relative;
+text-align: right;
+right: 0px;
+top:100px;
+
+}
+.last-img1{
+  position: relative;
+  
+}
+.last-img2{
+  position: relative;
+  top:100px;
+  left:100px;
+  z-index: 1;
+}
+
+.lt1{
+  position: relative;
+  left: 600px;
+  bottom: 300px;
+  width: 500px;
+}
+
+.lt2{
+  position: relative;
+  bottom: 300px;
+  height: 500px;
+  
+}
+
+
+.li1{
+  position: relative;
+  top:200px;
+}
+.li2{
+  position: relative;
+  top:200px;
+  width: 500px;
+  left:500px;
+  
+}
