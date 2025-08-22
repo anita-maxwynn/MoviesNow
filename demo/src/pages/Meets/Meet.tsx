@@ -83,16 +83,7 @@ const SpotlightLayout = () => {
 const MeetingRoom = ({ roomData, onLeave }: { roomData: RoomData; onLeave: () => void }) => {
   const [showChat, setShowChat] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
-  const [showMoviePlayer, setShowMoviePlayer] = useState(false);
   const participants = useParticipants();
-
-  // Show movie player when movie starts
-  useEffect(() => {
-    if (roomData.movie_started && !showMoviePlayer) {
-      setShowMoviePlayer(true);
-      toast.info("🎬 Movie player is now available!");
-    }
-  }, [roomData.movie_started]);
 
   return (
     <div className="h-full flex">
@@ -111,15 +102,6 @@ const MeetingRoom = ({ roomData, onLeave }: { roomData: RoomData; onLeave: () =>
               <Badge variant="default" className="text-sm bg-red-500 text-white">
                 🔴 Movie Playing
               </Badge>
-            )}
-            {showMoviePlayer && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMoviePlayer(!showMoviePlayer)}
-              >
-                {showMoviePlayer ? "Hide Movie" : "Show Movie"}
-              </Button>
             )}
           </div>
           
@@ -142,36 +124,9 @@ const MeetingRoom = ({ roomData, onLeave }: { roomData: RoomData; onLeave: () =>
           </div>
         </div>
 
-        {/* Video area with spotlight layout OR movie player */}
-        <div className="flex-1 bg-gray-900 relative">
-          {showMoviePlayer && roomData.movie_started ? (
-            <div className="h-full flex flex-col">
-              <div className="bg-black text-white p-2 text-center">
-                <span className="text-sm">🎬 Now Playing: {roomData.movie_details?.title || "Movie"}</span>
-              </div>
-              <div className="flex-1 flex items-center justify-center bg-black">
-                <div className="text-white text-center">
-                  <div className="text-6xl mb-4">🎬</div>
-                  <h3 className="text-xl mb-2">Movie is playing</h3>
-                  <p className="text-sm text-gray-300">
-                    The movie "{roomData.movie_details?.title}" has started.<br/>
-                    Movie streaming will be implemented here.
-                  </p>
-                  <div className="mt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowMoviePlayer(false)}
-                      className="text-black"
-                    >
-                      Switch to Video Call
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <SpotlightLayout />
-          )}
+        {/* Video area with spotlight layout */}
+        <div className="flex-1 bg-gray-900">
+          <SpotlightLayout />
         </div>
 
         {/* Control bar */}
@@ -243,59 +198,6 @@ export default function Meet() {
   const [token, setToken] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [socket, setSocket] = useState<WebSocket | null>(null);
-
-  // WebSocket connection for chat and movie notifications
-  useEffect(() => {
-    if (roomData && user && token) {
-      // Get the auth token for WebSocket authentication
-      const authToken = localStorage.getItem('token') || sessionStorage.getItem('token');
-      if (!authToken) {
-        console.error('No auth token found for WebSocket connection');
-        return;
-      }
-      
-      // Connect to Django WebSocket for chat and movie notifications using room ID
-      const wsUrl = `ws://localhost:8000/ws/room/${roomData.id}/?token=${authToken}`;
-      const newSocket = new WebSocket(wsUrl);
-      
-      newSocket.onopen = () => {
-        console.log('Connected to chat WebSocket');
-      };
-      
-      newSocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === 'movie_started') {
-          toast.success(`🎬 Movie "${data.movie_title}" has started!`);
-          // Update room data to reflect movie started
-          setRoomData(prev => prev ? { ...prev, movie_started: true, movie_start_time: data.started_at } : prev);
-        } else if (data.type === 'movie_stopped') {
-          toast.info(`🛑 Movie "${data.movie_title}" has stopped`);
-          // Update room data to reflect movie stopped
-          setRoomData(prev => prev ? { ...prev, movie_started: false, movie_start_time: undefined } : prev);
-        } else if (data.message && data.username) {
-          // Regular chat message - could be handled by LiveKit Chat component
-          console.log('Chat message:', data);
-        }
-      };
-      
-      newSocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-      
-      newSocket.onclose = (event) => {
-        console.log('WebSocket connection closed:', event.code, event.reason);
-      };
-      
-      setSocket(newSocket);
-      
-      return () => {
-        newSocket.close();
-        setSocket(null);
-      };
-    }
-  }, [roomData, user, token]);
 
   // Get room info on mount
   useEffect(() => {
